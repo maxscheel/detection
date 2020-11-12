@@ -1,4 +1,14 @@
 
+# Train
+This is best done on a desktop
+
+``` working/images/*.jpg ```
+``` working/annotations/ ```
+
+```
+python3 -m main --input "json --path ./working/annotations/buoys_new.json" --model "ttf" --train_size 400 --lr 0.001  --run_name train_ttf
+```
+
 
 # Convert model.pth to TensorRT model
 

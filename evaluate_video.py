@@ -134,7 +134,7 @@ def evaluate_tensorrt(model, size, encoder, filename, device = torch.cuda.curren
     
 
     def f(image, nms_params=detection_table.nms_defaults):
-        return evaluate_image(trt_model, frame, encoder, nms_params=nms_params, device=device).detections
+        return evaluate_image(trt_model, image, encoder, nms_params=nms_params, device=device).detections
 
     return f
 
