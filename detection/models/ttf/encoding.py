@@ -78,7 +78,9 @@ def decode(classification, boxes, kernel=3, nms_params=detection_table.nms_defau
     h, w, num_classes = classification.shape
     maxima, mask = local_maxima(classification, kernel=kernel, threshold=nms_params.threshold)
 
-    confidence, inds = maxima.view(-1).topk(k = min(nms_params.detections, mask.sum()), dim=0)
+    k = min(nms_params.detections, mask.sum())
+    #k = 100
+    confidence, inds = maxima.view(-1).topk(k = k , dim=0)
 
     labels   = inds // (h * w)
     box_inds = inds % (h * w)

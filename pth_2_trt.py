@@ -19,15 +19,15 @@ from checkpoint import load_model
     #print('done.')
     #return model, encoder, model_args
 
-def build_tensorrt(model, size, fp16=False):
+def build_tensorrt(model, size):
     x = torch.ones(1, 3, int(size[1]), int(size[0])).to(torch.cuda.current_device())
     trt_file = args.model[:-4] + ".trt"
     print ("Compiling with tensorRT to {} @ {}".format(trt_file, size))       
-    model = model.float().eval()
-    x = x.float()
+    model = model.half().eval()
+    x = x.half()
     trt_model = torch2trt(model, [x],
                           max_workspace_size=1<<28,
-                          fp16_mode=fp16,
+                          fp16_mode=True,
                           log_level=trt.Logger.Severity.VERBOSE,
                           strict_type_constraints=True,
                           max_batch_size=1)
@@ -38,11 +38,9 @@ def build_tensorrt(model, size, fp16=False):
 if __name__ == '__main__':    
     parameters = struct (
         model = param('', required=True, help="model checkpoint to use for detection"),
-        fp16 = param(True, help="use fp16 mode for inference"),
     )
     args = parse_args(parameters, "Provide pth file", "convert to tensorrt (trt)")
-    print(args.fp16)
     model, encoder, model_args = load_model(args.model)
     model.to(torch.cuda.current_device())
     size = [1920/2,1080/2]
-    trt_model = build_tensorrt(model, size, args.fp16)
+    trt_model = build_tensorrt(model, size)

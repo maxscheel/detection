@@ -1,8 +1,5 @@
 -e git+https://github.com/saulzar/pytorch_tools.git#egg=pytorch_tools
 -e git+https://github.com/NVIDIA-AI-IOT/torch2trt.git#egg=torch2trt
-opencv-python
-matplotlib
 xmltodict
 websockets
 natsort
-
