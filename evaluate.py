@@ -89,20 +89,18 @@ def evaluate_image(model, image, encoder, nms_params=detection_table.nms_default
 
         return struct(detections = encoder.decode(input_size, prediction, nms_params=nms_params), prediction = prediction)
 
-  
-eval_defaults = struct(
+def eval_defaults():  
+    eval_defaults = struct(
     overlap = 256,
     split = False,
-
     image_size = (600, 600),
     batch_size = 1,
     nms_params = detection_table.nms_defaults,
-
     device=torch.cuda.current_device(),
-    debug = ()
-)  
+    debug = ())
+    return eval_defaults
 
-def evaluate_full(model, data, encoder, params=eval_defaults):
+def evaluate_full(model, data, encoder, params=eval_defaults()):
     model.eval()
     with torch.no_grad():
         result = evaluate_image(model, data.image, encoder, device=params.device, nms_params=params.nms_params)
@@ -118,7 +116,7 @@ def evaluate_full(model, data, encoder, params=eval_defaults):
         return result._extend(statistics=statistics)
 
 
-def eval_test(model, encoder, params=eval_defaults):
+def eval_test(model, encoder, params=eval_defaults()):
     def f(data):
         result = evaluate_full(model, data, encoder, params)
         return struct (
