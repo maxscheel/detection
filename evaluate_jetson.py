@@ -2,7 +2,6 @@ import json
 import datetime
 from os import path
 from time import time
-
 import torch
 from torch2trt import TRTModule
 
@@ -44,11 +43,14 @@ def evaluate_video(frames, evaluate, args):
 
     device = torch.cuda.current_device()
     
-    batchSize = 4
+    batchSize = 1
     frameBatch = []
     detectionBatch = []
+    df_log = []
+    timestampBatch = []
     for i, frame in enumerate(frames()):
 
+        timestampBatch.append(datetime.datetime.utcnow())
         frameBatch.append(frame.half())
         if args.end is not None and i >= args.end:
             break
@@ -73,19 +75,26 @@ def evaluate_video(frames, evaluate, args):
                 cv.imshow(frame)
         
         if args.log:
-            df = []
-            for detFrame in detectionBatch:
+            for (timestamp, detFrame) in zip(timestampBatch, detectionBatch):
                 df_i = []
-                print('## Frame')
+                ts = timestamp.isoformat()[:-3]+'+00:00'
+                print('## Frame:', ts)
                 for (bbox, conf) in zip(detFrame.bbox.cpu().short(), detFrame.confidence.cpu()):
                     df_i.append({'bbox':bbox.tolist(), 'confidence':conf.tolist()})
-                    print('### {:.2f} '.format(conf, str(bbox.tolist())) )
-                df.append({'num_detections': len(df_i), 'detections':df_i})
-
-            print('batchLog:', len(df),'', [d['num_detections'] for d in df])
-            with open("{}/detections_{}.json".format(args.log, datetime.datetime.utcnow().isoformat()), "w") as f:
-                json.dump({'filename': args.input, 'frames':df}, f)
+                    #print('### {:.2f} '.format(conf, str(bbox.tolist())) )
+                df_log.append({'timestamp': ts, 'num_detections': len(df_i), 'detections':df_i})
             detectionBatch = []
+            timestampBatch = []
+        
+        logFrameInterval = 150
+        print('num frames in log buffer', len(df_log))
+        if args.log:
+            if len(df_log) > logFrameInterval:
+                print('WRITING LOG')
+                #print('batchLog:', len(df_log),'', [d['num_detections'] for d in df_log])
+                with open("{}/detections_{}.json".format(args.log, datetime.datetime.utcnow().isoformat()), "w") as f:
+                    json.dump({'filename': args.input, 'frames':df_log}, f)
+                df_log = []
 
         fiveB = batchSize*5
         if i % fiveB == (fiveB-1):        
