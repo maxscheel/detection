@@ -49,6 +49,9 @@ def evaluate_video(frames, evaluate, args):
     df_log = []
     timestampBatch = []
     for i, frame in enumerate(frames()):
+        if i<20:
+            # Skip first 20 frames of detection cycle to let camera set autowb and iso
+            continue
 
         timestampBatch.append(datetime.datetime.utcnow())
         frameBatch.append(frame.half())
@@ -57,7 +60,8 @@ def evaluate_video(frames, evaluate, args):
         if len(frameBatch)<batchSize:
             continue
         frameBatch = torch.stack(frameBatch).to(device)
-        print('Submitting new Batch')
+        print('Submitting new batch..')
+        print('Done')
         for frame in frameBatch:
             d = frame.detach().clone()
             detections = evaluate(d, nms_params=nms_params)
@@ -68,9 +72,10 @@ def evaluate_video(frames, evaluate, args):
                 classes = [struct(id=0, count_weight=1, weighting=0.25, name='buoy', shape='box', colour=16776960)]
                 frame = frame.cpu().byte()
                 for (label, bbox, conf) in zip(detections.label.cpu(),detections.bbox.cpu(), detections.confidence.cpu()):
-                    color = (int((1.0 - conf) * 255), int(255 * conf), 0)
-                    label_class = classes[label]
-                    display.draw_box(frame, bbox, confidence=conf, name=label_class.name, color=color)
+                    if conf > args.threshold:
+                        color = (int((1.0 - conf) * 255), int(255 * conf), 0)
+                        label_class = classes[label]
+                        display.draw_box(frame, bbox, confidence=conf, name=label_class.name, color=color)
             if args.show:
                 cv.imshow(frame)
         
@@ -80,8 +85,8 @@ def evaluate_video(frames, evaluate, args):
                 ts = timestamp.isoformat()[:-3]+'+00:00'
                 print('## Frame:', ts)
                 for (bbox, conf) in zip(detFrame.bbox.cpu().short(), detFrame.confidence.cpu()):
-                    df_i.append({'bbox':bbox.tolist(), 'confidence':conf.tolist()})
-                    #print('### {:.2f} '.format(conf, str(bbox.tolist())) )
+                    if conf > args.threshold:
+                        df_i.append({'bbox':bbox.tolist(), 'confidence':conf.tolist()})
                 df_log.append({'timestamp': ts, 'num_detections': len(df_i), 'detections':df_i})
             detectionBatch = []
             timestampBatch = []
@@ -91,14 +96,12 @@ def evaluate_video(frames, evaluate, args):
         if args.log:
             if len(df_log) > logFrameInterval:
                 print('WRITING LOG')
-                #print('batchLog:', len(df_log),'', [d['num_detections'] for d in df_log])
                 with open("{}/detections_{}.json".format(args.log, datetime.datetime.utcnow().isoformat()), "w") as f:
                     json.dump({'filename': args.input, 'frames':df_log}, f)
                 df_log = []
 
         fiveB = batchSize*5
         if i % fiveB == (fiveB-1):        
-            #torch.cuda.current_stream().synchronize()
             now = time()
             elapsed = now - last
             print("frame: {} - {} frames in {:.1f} seconds, at {:.2f} fps".format(i, fiveB, elapsed, fiveB/elapsed))
