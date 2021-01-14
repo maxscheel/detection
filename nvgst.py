@@ -6,7 +6,7 @@ def videoin(fPath=None, width=960, height=540):
     if fPath:
         gst =  ' filesrc location={} ! qtdemux ! queue ! h264parse ! nvv4l2decoder ! nvvidconv ! '.format(fPath)
     else:
-        gst =( ' nvarguscamerasrc ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, ' + 
+        gst =( ' nvarguscamerasrc sensor-id=0 ! video/x-raw(memory:NVMM), width=(int)1920, height=(int)1080, ' + 
              'format=(string)NV12, framerate=(fraction)5/1 ! ' +
             'nvvidconv ! ')
 

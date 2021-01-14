@@ -49,9 +49,9 @@ def evaluate_video(frames, evaluate, args):
     df_log = []
     timestampBatch = []
     for i, frame in enumerate(frames()):
-        if i<20:
-            # Skip first 20 frames of detection cycle to let camera set autowb and iso
-            continue
+        #if i<20:
+        #    # Skip first 20 frames of detection cycle to let camera set autowb and iso
+        #    continue
 
         timestampBatch.append(datetime.datetime.utcnow())
         frameBatch.append(frame.half())
